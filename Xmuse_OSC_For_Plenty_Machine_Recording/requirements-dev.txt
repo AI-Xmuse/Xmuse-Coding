@@ -1,0 +1,14 @@
+# 测试相关
+pytest>=7.0.0
+pytest-cov>=3.0.0
+pytest-benchmark>=4.0.0
+
+# 代码质量
+pylint>=2.12.0
+black>=22.0.0
+isort>=5.10.0
+mypy>=0.950
+
+# 文档
+sphinx>=4.5.0
+sphinx-rtd-theme>=1.0.0 
