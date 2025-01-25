@@ -1,0 +1,74 @@
+import numpy as np
+import mne
+import matplotlib.pyplot as plt
+
+# 读取两个脑电数据的npy文件
+clean_data_path = '输入您的NPY文件数据路径.npy'  # 干净的EEG数据路径
+artifact_data_path = '输入您的其他NPY文件路径.npy'  # 含伪迹的EEG数据路径
+
+# 加载数据
+clean_data = np.load(clean_data_path)
+clean_data = clean_data.T
+artifact_data = np.load(artifact_data_path)
+artifact_data =artifact_data.T
+
+# 检查数据的形状
+print("Clean data shape:", clean_data.shape)
+print("Artifact data shape:", artifact_data.shape)
+
+# 创建MNE的Raw对象
+info = mne.create_info(ch_names=['TP9', 'AF7', 'AF8' , 'TP10'], sfreq=256, ch_types='eeg')  # 设置通道名和采样率
+
+# 创建 RawArray 确保数据的顺序是 (通道, 时间)
+raw_clean = mne.io.RawArray(clean_data, info)
+raw_artifact = mne.io.RawArray(artifact_data, info)
+
+# 可视化
+num_channels = clean_data.shape[0]
+fig, axs = plt.subplots(num_channels, 2, figsize=(12, 4 * num_channels))
+
+# 绘制含伪迹的EEG数据
+for i in range(num_channels):
+    axs[i, 0].plot(raw_artifact.times, artifact_data[i, :], alpha=0.5)  # 修改为 artifact_data[i, :]
+    axs[i, 0].set_title(f'Artifact EEG Data - Channel {i + 1}')
+    axs[i, 0].set_xlabel('Time (s)')
+    axs[i, 0].set_ylabel('Amplitude (µV)')
+    axs[i, 0].set_xlim([0, raw_artifact.times[-1]])
+    axs[i, 0].set_ylim([0, 1200])  # 统一纵坐标范围
+
+# 绘制干净的EEG数据
+for i in range(num_channels):
+    axs[i, 1].plot(raw_clean.times, clean_data[i, :], alpha=0.5)  # 修改为 clean_data[i, :]
+    axs[i, 1].set_title(f'Clean EEG Data - Channel {i + 1}')
+    axs[i, 1].set_xlabel('Time (s)')
+    axs[i, 1].set_ylabel('Amplitude (µV)')
+    axs[i, 1].set_xlim([0, raw_clean.times[-1]])
+    axs[i, 1].set_ylim([0, 1200])  # 统一纵坐标范围
+
+plt.tight_layout()
+plt.show()
+# 可视化
+plt.figure(figsize=(20, 8))
+
+# 绘制含伪迹的EEG数据
+plt.subplot(2, 1, 1)
+data_artifact, times_artifact = raw_artifact[:, :]  # 获取数据和时间
+plt.plot(times_artifact, data_artifact.T, alpha=0.5)
+plt.title('Artifact EEG Data')
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude (µV)')
+plt.xlim([0, times_artifact[-1]])
+plt.ylim([0, 1200])  # 统一纵坐标范围
+
+# 绘制干净的EEG数据
+plt.subplot(2, 1, 2)
+data_clean, times_clean = raw_clean[:, :]  # 获取数据和时间
+plt.plot(times_clean, data_clean.T, alpha=0.5)
+plt.title('Clean EEG Data')
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude (µV)')
+plt.xlim([0, times_clean[-1]])
+plt.ylim([0, 1200])  # 统一纵坐标范围
+
+plt.tight_layout()
+plt.show()

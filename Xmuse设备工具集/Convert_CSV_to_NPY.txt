@@ -1,0 +1,9 @@
+import pandas as pd
+import numpy as np
+# 读取 CSV 文件
+df = pd.read_csv('输入您的CSV文件路径内容.csv')
+# 将数据转换为 NumPy 数组
+data_array = df.to_numpy()
+data_array_transposed = data_array.T
+# 保存为 NPY 文件
+np.save('输入您想要保存的NPY文件路径内容.npy', data_array_transposed)

@@ -1,0 +1,81 @@
+import pandas as pd
+import os
+import logging
+from datetime import datetime
+import argparse
+
+class SignalExtractor:
+    def __init__(self):
+        self.setup_logging()
+
+    def setup_logging(self):
+        """配置日志"""
+        log_dir = "logs"
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            
+        log_file = os.path.join(log_dir, f"signal_extraction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(log_file),
+                logging.StreamHandler()
+            ]
+        )
+
+    def extract_signals(self, input_file: str, output_dir: str):
+        """
+        从CSV文件中提取不同的信号流
+        Args:
+            input_file: 输入CSV文件路径
+            output_dir: 输出目录
+        """
+        try:
+            # 读取CSV文件
+            df = pd.read_csv(input_file)
+            logging.info(f"成功读取文件: {input_file}")
+            logging.info(f"数据���状: {df.shape}")
+
+            # 创建输出目录
+            os.makedirs(output_dir, exist_ok=True)
+
+            # 获取所有唯一的信号类型
+            signal_types = df['Address'].unique()
+            logging.info(f"发现的信号类型: {signal_types}")
+
+            # 为每种信号类型创建单独的文件
+            for signal_type in signal_types:
+                try:
+                    # 提取该信号类型的数据
+                    signal_data = df[df['Address'] == signal_type].copy()
+                    
+                    # 生成文件名（移除斜杠和特殊字符）
+                    file_name = signal_type.strip('/').replace('/', '_') + '.csv'
+                    output_path = os.path.join(output_dir, file_name)
+                    
+                    # 保存数据
+                    signal_data.to_csv(output_path, index=False)
+                    logging.info(f"已保存 {signal_type} 数据到: {output_path}, 共 {len(signal_data)} 条记录")
+                    
+                except Exception as e:
+                    logging.error(f"处理信号 {signal_type} 时出错: {e}")
+
+        except Exception as e:
+            logging.error(f"处理文件时出错: {e}")
+            logging.error("错误详情:", exc_info=True)
+
+def main():
+    parser = argparse.ArgumentParser(description='OSC信号提取工具')
+    parser.add_argument('--input', type=str, required=True,
+                      help='输入CSV文件路径')
+    parser.add_argument('--output', type=str, required=True,
+                      help='输出目录路径')
+    
+    args = parser.parse_args()
+    
+    extractor = SignalExtractor()
+    extractor.extract_signals(args.input, args.output)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,119 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import font_manager
+
+# 设置字体
+plt.rcParams['font.family'] = 'SimHei'  # 或者 'Microsoft YaHei'
+plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
+# FFT 频率域滤波函数
+def fft_filter(data, fs, filter_type, cutoff):
+    n_samples = data.shape[0]
+    freqs = np.fft.rfftfreq(n_samples, 1 / fs)  # 频率轴
+    fft_data = np.fft.rfft(data, axis=0)  # 进行 FFT 变换
+
+    # 构建滤波器
+    if filter_type == 'highpass':
+        mask = freqs > cutoff
+    elif filter_type == 'lowpass':
+        mask = freqs < cutoff
+    elif filter_type == 'bandpass':
+        mask = (freqs > cutoff[0]) & (freqs < cutoff[1])
+    elif filter_type == 'notch':
+        mask = ~((freqs > cutoff[0]) & (freqs < cutoff[1]))  # 陷波
+    else:
+        raise ValueError("Unsupported filter type!")
+
+    # 滤波操作
+    fft_data[~mask] = 0  # 屏蔽不需要的频率分量
+
+    # 逆 FFT 回到时间域
+    filtered_data = np.fft.irfft(fft_data, n=n_samples, axis=0)
+    return filtered_data
+
+# 加载数据
+file_path = "输入您的Xmuse.npy文件路径"
+eeg_data = np.load(file_path)  # 假设形状为 (样本数, 通道数)
+eeg_data = eeg_data.T  # 转置为 (时间点, 通道数)
+fs = 256  # 采样频率，单位 Hz
+
+# 滤波参数
+high_cutoff = 2  # 高通截止频率 (Hz)
+low_cutoff = 40  # 低通截止频率 (Hz)
+band_cutoff = [2, 40]  # 带通频率范围 (Hz)
+notch_cutoff = [49, 51]  # 陷波频率范围 (Hz)
+
+# 滤波操作
+eeg_highpass = fft_filter(eeg_data, fs, 'highpass', high_cutoff) + np.mean(eeg_data, axis=0)
+eeg_lowpass = fft_filter(eeg_data, fs, 'lowpass', low_cutoff)
+eeg_bandpass = fft_filter(eeg_data, fs, 'bandpass', band_cutoff) + np.mean(eeg_data, axis=0)
+eeg_notch = fft_filter(eeg_data, fs, 'notch', notch_cutoff)
+
+# 绘图
+channels = eeg_data.shape[1]
+time = np.arange(eeg_data.shape[0]) / fs
+
+for ch in range(channels):
+    # 高通滤波对比
+    fig, axs = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    axs[0].plot(time, eeg_data[:, ch], label="原始信号", color="black")
+    axs[0].set_title(f"通道 {ch + 1} - 原始信号")
+    axs[0].set_ylabel("幅值")
+    axs[0].legend()
+
+    axs[1].plot(time, eeg_highpass[:, ch], label="高通滤波 (恢复基线)", color="blue")
+    axs[1].set_title(f"通道 {ch + 1} - 高通滤波")
+    axs[1].set_xlabel("时间 (秒)")
+    axs[1].set_ylabel("幅值")
+    axs[1].legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    # 低通滤波对比
+    fig, axs = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    axs[0].plot(time, eeg_data[:, ch], label="原始信号", color="black")
+    axs[0].set_title(f"通道 {ch + 1} - 原始信号")
+    axs[0].set_ylabel("幅值")
+    axs[0].legend()
+
+    axs[1].plot(time, eeg_lowpass[:, ch], label="低通滤波", color="green")
+    axs[1].set_title(f"通道 {ch + 1} - 低通滤波")
+    axs[1].set_xlabel("时间 (秒)")
+    axs[1].set_ylabel("幅值")
+    axs[1].legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    # 带通滤波对比
+    fig, axs = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    axs[0].plot(time, eeg_data[:, ch], label="原始信号", color="black")
+    axs[0].set_title(f"通道 {ch + 1} - 原始信号")
+    axs[0].set_ylabel("幅值")
+    axs[0].legend()
+
+    axs[1].plot(time, eeg_bandpass[:, ch], label="带通滤波 (恢复基线)", color="red")
+    axs[1].set_title(f"通道 {ch + 1} - 带通滤波")
+    axs[1].set_xlabel("时间 (秒)")
+    axs[1].set_ylabel("幅值")
+    axs[1].legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    # 陷波滤波对比
+    fig, axs = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    axs[0].plot(time, eeg_data[:, ch], label="原始信号", color="black")
+    axs[0].set_title(f"通道 {ch + 1} - 原始信号")
+    axs[0].set_ylabel("幅值")
+    axs[0].legend()
+
+    axs[1].plot(time, eeg_notch[:, ch], label="陷波滤波", color="purple")
+    axs[1].set_title(f"通道 {ch + 1} - 陷波滤波")
+    axs[1].set_xlabel("时间 (秒)")
+    axs[1].set_ylabel("幅值")
+    axs[1].legend()
+
+    plt.tight_layout()
+    plt.show()

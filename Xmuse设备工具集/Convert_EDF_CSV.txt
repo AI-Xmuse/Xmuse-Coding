@@ -1,0 +1,19 @@
+import mne
+import pandas as pd
+
+# 读取EDF文件
+edf_file = 'C:\\Users\\PC\\Desktop\\滤波.edf'
+raw = mne.io.read_raw_edf(edf_file, preload=True)
+
+# 获取EEG数据和通道名称
+data = raw.get_data()  # 数据是一个二维数组，形状为 (通道数, 时间点数)
+channel_names = raw.info['ch_names']
+
+# 将数据转换为DataFrame
+df = pd.DataFrame(data.T, columns=channel_names)  # 转置数据，使得每一列代表一个通道
+
+# 保存为CSV文件
+csv_file = 'C:\\Users\\PC\\Desktop\\output_file.csv'
+df.to_csv(csv_file, index=False)
+
+print(f"EDF文件已成功转换为CSV格式并保存为 {csv_file}")
