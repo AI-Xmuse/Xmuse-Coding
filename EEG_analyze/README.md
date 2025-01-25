@@ -110,8 +110,16 @@ visualizer.plot_comprehensive_view(
 
 如果您在使用过程中遇到任何问题，或有任何建议，欢迎：
 
-1. 提交 [Issue](https://github.com/AI-Xmuse/Xmuse-Coding.git)
-2. 发送邮件至：601625293@qq.com或者support@xmuse.cn
+ 提交 [Issue](https://github.com/AI-Xmuse/Xmuse-Coding.git)
+
+## 联系方式
+
+- 作者：[ZhuQinghui]
+- 邮箱：[601625293@qq.com或者support@xmuse.cn]
+- 项目主页：[https://github.com/AI-Xmuse/Xmuse-Coding.git]
+
+---
+如有问题或建议，欢迎提交 Issue 或通过邮件联系。
 
 ## 许可证
 
