@@ -65,3 +65,11 @@
 - 建议在处理大文件前先备份原始数据
 - 注意检查采样率设置是否正确
 - 确保足够的系统内存
+## 联系方式
+
+- 作者：[ZhuQinghui]
+- 邮箱：[601625293@qq.com或者support@xmuse.cn]
+- 项目主页：[https://github.com/AI-Xmuse/Xmuse-Coding.git]
+
+---
+如有问题或建议，欢迎提交 Issue 或通过邮件联系。
