@@ -8,7 +8,7 @@ import os
 import numpy as np
 from datetime import datetime
 matplotlib.use('TkAgg')
-
+print('finished importing packages')
 # 定义所有需要采集的数据类型
 STREAM_TYPES = ['ThetaRel', 'DeltaScore', 'IsGood', 'EEG', 'DeltaAbs', 'HsiPrec',
                 'JawClench', 'GammaRel', 'PPG', 'BetaScore', 'DeltaRel', 'HeadOn',
@@ -47,10 +47,19 @@ for stream_type in STREAM_TYPES:
         }
         
         # 创建信号流的CSV文件并写入头部
-        csv_path = os.path.join(save_dir, f"{stream_type}_signal.csv")
-        channel_columns = [f'channel_{i+1}' for i in range(stream_info.channel_count())]
-        df = pd.DataFrame(columns=['timestamp'] + channel_columns)
-        df.to_csv(csv_path, index=False)
+        if stream_type == 'EEG':
+            annot_path = os.path.join(save_dir, f"EEG_Annot_signal.csv")
+            channel_columns = [f'channel_{i+1}' for i in range(stream_info.channel_count())]
+            df = pd.DataFrame(columns=['timestamp','Annot'] + channel_columns )
+            df.to_csv(annot_path, index=False)
+
+        else:
+            csv_path = os.path.join(save_dir, f"{stream_type}_signal.csv")
+            channel_columns = [f'channel_{i+1}' for i in range(stream_info.channel_count())]
+            df = pd.DataFrame(columns=['timestamp'] + channel_columns)
+            df.to_csv(csv_path, index=False)
+
+
         
         print(f"{stream_type} 数据流信息：通道数={stream_info.channel_count()}, 采样率={nominal_srate}")
 
@@ -112,6 +121,88 @@ def save_stream_data(stream_type, samples, timestamps):
     except Exception as e:
         print(f"保存 {stream_type} 数据时出错: {str(e)}")
 
+import tkinter as tk
+from tkinter import ttk
+import pandas as pd
+import os
+import threading
+from queue import Queue
+
+# 共享标注队列（线程安全）
+annotation_queue = Queue()
+
+def setup_gui():
+    root = tk.Tk()
+    root.title("EEG Annotation")
+
+    # 增加标注类型预设按钮
+    ttk.Label(root, text="Quick annot:").pack()
+    preset_frame = ttk.Frame(root)
+    preset_frame.pack()
+    
+    presets = ["Blink", "Move", "Touch", "Frown","unknown"]
+    for preset in presets:
+        ttk.Button(preset_frame, text=preset, 
+                 command=lambda p=preset: annotation_queue.put(p)).pack(side=tk.LEFT)
+
+    # 自定义标注输入
+    entry = ttk.Entry(root)
+    entry.pack(pady=5)
+    
+    def submit_annotation():
+        """提交标注（支持回车键）"""
+        if text := entry.get().strip():
+            annotation_queue.put(text)
+            entry.delete(0, tk.END)
+    
+    ttk.Button(root, text="提交标注 (Enter)", command=submit_annotation).pack()
+    root.bind('<Return>', lambda e: submit_annotation())
+    
+    root.mainloop()
+
+# 启动GUI线程
+threading.Thread(target=setup_gui, daemon=True).start()
+
+def save_stream_EEG_data(stream_type, samples, timestamps):
+    """修复后的数据保存函数"""
+    if not samples:
+        return
+
+    try:
+        # 获取当前所有未处理的标注
+        annotations = []
+        while not annotation_queue.empty():
+            annotations.append(annotation_queue.get())
+        
+
+
+        annot_list = [''] * len(timestamps)
+        annot_list[0] = annotations[-1] if annotations else ""
+
+        # 保证列顺序一致性
+        data_dict = {
+            'timestamp': timestamps,
+            'Annot': annot_list  # 只对一个chunk的第一个样本做标注。时间分辨率取决于chunk size
+        }
+        
+        # 动态生成通道数据
+        for j in range(len(samples[0])):
+            data_dict[f'channel_{j+1}'] = [sample[j] for sample in samples]
+
+        # 将数据添加到DataFrame并保存
+        df = pd.DataFrame(data_dict)
+        csv_path = os.path.join(save_dir, f"{stream_type}_Annot_signal.csv")        
+        df.to_csv(csv_path, mode='a', header=False, index=False)
+        
+        # 调试输出
+        if annot_list[0] != '':
+            print(f"标注: '{annot_list[0]}'")
+        
+    except Exception as e:
+        print(f"保存失败: {str(e)}")
+
+
+
 try:
     print("开始记录数据...")
     print(f"数据将保存在: {save_dir}")
@@ -132,12 +223,18 @@ try:
                 )
                 
                 if samples:
-                    # 直接保存数据
-                    save_stream_data(stream_type, samples, timestamps)
-                    
+
+
                     # 如果是EEG数据，更新可视化（只显示最后一个样本）
                     if stream_type == 'EEG':
                         update_visualization(samples[-1])
+                        #added
+                        save_stream_EEG_data(stream_type, samples, timestamps)
+                    else:
+                        save_stream_data(stream_type, samples, timestamps)
+
+                        
+                    
                         
             except Exception as e:
                 print(f"处理 {stream_type} 数据时出错: {str(e)}")
